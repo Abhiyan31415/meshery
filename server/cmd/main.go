@@ -193,12 +193,17 @@ func main() {
 		log.Error(ErrInitializingRegistryManager(err))
 		os.Exit(1)
 	}
+
+	// Initialize Registry Enricher for MeshSync resources
+	_ = models.NewRegistryEnricher(dbHandler.DB, regManager)
+	log.Info("Registry enricher initialized for MeshSync resources")
+
 	meshsyncCh := make(chan struct{}, 10)
 	brokerConn := nats.NewEmptyConnection
 
 	err = dbHandler.AutoMigrate(
 		&meshsyncmodel.KubernetesKeyValue{},
-		&meshsyncmodel.KubernetesResource{},
+		&models.MeshSyncResource{}, // Extended model with Registry references (ModelID, ComponentID)
 		&meshsyncmodel.KubernetesResourceSpec{},
 		&meshsyncmodel.KubernetesResourceStatus{},
 		&meshsyncmodel.KubernetesResourceObjectMeta{},
@@ -362,6 +367,7 @@ func main() {
 		hc.EventBroadcaster,
 		nil,
 		&instanceID,
+		
 	)
 	connToInstanceTracker := machines.ConnectionToStateMachineInstanceTracker{
 		ConnectToInstanceMap: make(map[uuid.UUID]*machines.StateMachine, 0),
